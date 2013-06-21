@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>raichoo : λΠ-punk - Idris to JavaScript: Playing with the FFI</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">raichoo : λΠ-punk</a>
+            </div>
+            <div id="navigation">
+              <a href="http://twitter.com/raichoo">Twitter</a>
+              <a href="http://github.com/raichoo">Github</a>
+              <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Idris to JavaScript: Playing with the FFI</h1>
+
+            <div class="info">
+    Posted on January 21, 2013
+    
+        by raichoo
+    
+</div>
+
+<p>Until now the FFI for the JavaScript backend for Idris is quite primitive and somehow I’d like to keep it that way since I don’t want to make invasive changes to the language just because of a different target. Therefore a started a little experiment to see how far one can get with the current FFI. In JavaScript can have fields of objects, methods, functions, arrays etc etc. and we need to cover all these cases. Let’s start with a little case study. We want to manipulate the DOM. Here is a little HTML snippet to begin with:</p>
+<div class="highlight"><pre><span class="nt">&lt;html&gt;</span>
+  <span class="nt">&lt;head&gt;</span>
+  <span class="nt">&lt;/head&gt;</span>
+  <span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;test&quot;</span><span class="nt">&gt;</span>Foobar<span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;test.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+  <span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</pre></div>
+
+<p>Now we want to replace the text of the Node with the id test</p>
+<div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
+
+<span class="kr">data</span> <span class="kt">HTMLElement</span> <span class="ow">:</span> <span class="kt">Type</span> <span class="kr">where</span>
+  <span class="nf">Elem</span> <span class="ow">:</span> <span class="kt">Ptr</span> <span class="ow">-&gt;</span> <span class="kt">HTMLElement</span>
+
+<span class="kr">data</span> <span class="kt">NodeList</span> <span class="ow">:</span> <span class="kt">Type</span> <span class="kr">where</span>
+  <span class="nf">Nodes</span> <span class="ow">:</span> <span class="kt">Ptr</span> <span class="ow">-&gt;</span> <span class="kt">NodeList</span>
+
+<span class="nf">query</span> <span class="ow">:</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">NodeList</span>
+query q <span class="ow">=</span> <span class="kr">do</span>
+  e <span class="ow">&lt;-</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;document.querySelectorAll&quot;</span> <span class="ow">[</span><span class="kt">FString</span><span class="ow">]</span> <span class="kt">FPtr</span><span class="err">)</span> q
+  return <span class="err">(</span><span class="kt">Nodes</span> e<span class="err">)</span>
+
+<span class="nf">item</span> <span class="ow">:</span> <span class="kt">NodeList</span> <span class="ow">-&gt;</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">HTMLElement</span>
+item <span class="err">(</span><span class="kt">Nodes</span> p<span class="err">)</span> i <span class="ow">=</span> <span class="kr">do</span>
+  i <span class="ow">&lt;-</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.item&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span><span class="ow">]</span> <span class="kt">FPtr</span><span class="err">)</span> p i
+  return <span class="err">(</span><span class="kt">Elem</span> i<span class="err">)</span>
+
+<span class="nf">getId</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">String</span>
+getId <span class="err">(</span><span class="kt">Elem</span> p<span class="err">)</span> <span class="ow">=</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span> p
+
+<span class="nf">setText</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>
+setText <span class="err">(</span><span class="kt">Elem</span> p<span class="err">)</span> s <span class="ow">=</span>
+  mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.textContent=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FString</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> p s
+
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> <span class="kr">do</span>
+  e <span class="ow">&lt;-</span> query <span class="s">&quot;#test&quot;</span>
+  i <span class="ow">&lt;-</span> item e <span class="mi">0</span>
+  s <span class="ow">&lt;-</span> getId i
+  setText i <span class="err">(</span>s <span class="ow">++</span> <span class="s">&quot;: SUPERFOO!!!&quot;</span><span class="err">)</span>
+</pre></div>
+
+<p>In this example I’m using the Ptr type for raw JavaScript values and wrap them in ADTs. The interesting part is in the definition of the foreign functions. Functions starting with “.” are methods or fields, that means that the first argument of the function is handled as and object and the function call gets translated into a method or field name. Functions ending with “=” are turned into assignments</p>
+<p>Another thing we have to consider is that sometimes we want to refer to a method with no arguments, therefore we have to distinguish them from reading a field. In our example we read the value of the field id. If we wanted to turn that into a method call we need to declare it like this:</p>
+<div class="highlight"><pre>mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FUnit</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span> p <span class="err">()</span>
+</pre></div>
+
+<p>We simply add an argument of type FUnit to the argument list and apply (). Operations on arrays are declared like this:</p>
+<div class="highlight"><pre>mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id[]&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span>
+mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id[]=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span>, <span class="kt">FString</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span>
+</pre></div>
+
+<p>The second argument is treated as an index Working with the FFI is still dangerous, I’m currently unaware of a different way to do this without changing Idris’ FFI which is something I don’t want to. Another thing I don’t want to do is making the FFI overly complex, it should be very low level and provide the basic building blocks for interacting with JavaScript. Anyway, patches are welcome ^^</p>
+
+        </div>
+        <div id="footer">
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </div>
+    </body>
+</html>

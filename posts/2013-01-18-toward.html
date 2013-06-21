@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>raichoo : λΠ-punk - Towards dependently typed webprogramming with Idris</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">raichoo : λΠ-punk</a>
+            </div>
+            <div id="navigation">
+              <a href="http://twitter.com/raichoo">Twitter</a>
+              <a href="http://github.com/raichoo">Github</a>
+              <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Towards dependently typed webprogramming with Idris</h1>
+
+            <div class="info">
+    Posted on January 18, 2013
+    
+        by raichoo
+    
+</div>
+
+<p>JavaScript pretty much has become the lingua franka of the web. It runs in the browser, and since <a href="http://nodejs.org/">nodejs</a> it’s also possible to write server applications. However, it lacks a powerful type-system, and type-systems are something a lot of us have come to love. Anyway, this is not the time for the usual “dynamic vs. static” and “weak vs. strong typing” blog post. Today I want to write about a project I’ve started working on which brings <a href="http://en.wikipedia.org/wiki/Dependent_type">dependent types</a> to the JavaScript ecosystem meaning a JavaScript backend for the <a href="http://idris-lang.org/">Idris</a> compiler. The foundation of this effort, the programming language Idris by Edwin Brady. Idris is basically the answer to the question: “What would Haskell look like if it had full dependent types?” It has strict semantics but also offers annotations for non-strict evaluation. If you want to know more about Idris can highly recommend <a href="http://www.cs.st-andrews.ac.uk/~eb/writings/idris-tutorial.pdf">the tutorial</a>. Sadly there is not a lot of material out there to learn about programming with dependent types but I will link some resources in this blog post. The backend itself compiles a large set of the language into a self contained Javascript file and offers a simple FFI to communicate with other libraries. It’s still every experimental and I would not recommend to use it in your dayjob. However, if you feel like it feel free to contribute libraries and patches to complete the experience and transform Idris into a suitable language for web programming :)</p>
+<p>How to use it: Let’s write a little Idris program and compile it to JavaScript:</p>
+<div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
+
+<span class="nf">product</span> <span class="ow">:</span> <span class="kt">List</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
+product <span class="ow">=</span> foldl <span class="err">(</span><span class="ow">*</span><span class="err">)</span> <span class="mi">1</span>
+
+<span class="nf">fac</span> <span class="ow">:</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
+fac n <span class="ow">=</span> product <span class="ow">[</span><span class="mi">1</span><span class="ow">..</span>n<span class="ow">]</span>
+
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> print <span class="err">(</span>fac <span class="mi">300</span><span class="err">)</span>
+</pre></div>
+
+<p>and compile it</p>
+<pre><code>&gt; idris --target javascript test.idr -o test.js</code></pre>
+<p>and run it</p>
+<pre><code>&gt; node test.js
+… long output is long …</code></pre>
+<p>As you can see, the backend also supports big integers. The generated file is completely self contained including code from the standard library like typeclasses etc. (not everything but the code you need). Now lets use the FFI to call into JavaScript land!</p>
+<div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
+
+<span class="nf">product</span> <span class="ow">:</span> <span class="kt">List</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
+product <span class="ow">=</span> foldl <span class="err">(</span><span class="ow">*</span><span class="err">)</span> <span class="mi">1</span>
+
+<span class="nf">fac</span> <span class="ow">:</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
+fac n <span class="ow">=</span> product <span class="ow">[</span><span class="mi">1</span><span class="ow">..</span>n<span class="ow">]</span>
+
+<span class="nf">alert</span> <span class="ow">:</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>                                     
+alert s <span class="ow">=</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;alert&quot;</span> <span class="ow">[</span><span class="kt">FString</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> s
+
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> alert <span class="ow">$</span> show <span class="err">(</span>fac <span class="mi">300</span><span class="err">)</span>
+</pre></div>
+
+<p>Compile and run it in a browser of your choice ^^</p>
+<p>This is just a little fraction of what you can do with the backend. Currently there is no support for types like Word8 and Word16 because it would not really make sense in a JavaScript context. There is also no support for filesystem operations. The code that gets generated is still rather large but with the google closure compiler you can reduce the size by a factor of 2 (advanced compilation is not supported at the moment).</p>
+<p>References:</p>
+<ul>
+<li><a href="http://adam.chlipala.net/cpdt/">Certified Programming With Dependent Types</a></li>
+<li><a href="http://www.youtube.com/watch?v=CmPw7eo3nQI">Talk by Andreas Bogk at Chaos Communication Camp 2011</a></li>
+<li><a href="http://wiki.portal.chalmers.se/agda/pmwiki.php">Agda Wiki</a></li>
+</ul>
+
+        </div>
+        <div id="footer">
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </div>
+    </body>
+</html>

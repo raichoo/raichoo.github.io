@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>raichoo : λΠ-punk - Shrinking Idris JavaScript with Closure</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">raichoo : λΠ-punk</a>
+            </div>
+            <div id="navigation">
+              <a href="http://twitter.com/raichoo">Twitter</a>
+              <a href="http://github.com/raichoo">Github</a>
+              <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Shrinking Idris JavaScript with Closure</h1>
+
+            <div class="info">
+    Posted on February 13, 2013
+    
+        by raichoo
+    
+</div>
+
+<p>Compiling Idris to JavaScript can result in some pretty large files. In fact, small Idris programs can become so large that one might consider to fall back to JavaScript because it’s just not worth it.</p>
+<p>Let’s take a look at a very simple example:</p>
+<div class="highlight"><pre><span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> <span class="kr">do</span>
+  print l
+<span class="kr">where</span>
+  <span class="nf">l</span> <span class="ow">:</span> <span class="kt">List</span> <span class="kt">Nat</span>
+  l <span class="ow">=</span> <span class="ow">[</span><span class="mi">1</span>,2,3,4,5]
+</pre></div>
+
+<p>Let’s compile this program and take a look at the size of the generated JavaScript.</p>
+<pre><code>raichoo@lain tmp» ls -lh test1.js
+-rw-r--r-- 1 raichoo users 35K Feb 13 17:40 test1.js</code></pre>
+<p>35K of code is actually quite a lot for such a small program, but let’s take into account that the file contains the whole runtime plus all needed parts of the standard library.</p>
+<p>However, it gets even worse. The above program can be written in a different way. Let’s give it a try.</p>
+<div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
+
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> <span class="kr">do</span>
+  print l
+<span class="kr">where</span>
+  <span class="nf">l</span> <span class="ow">:</span> <span class="kt">List</span> <span class="kt">Nat</span>
+  l <span class="ow">=</span> <span class="ow">[</span><span class="mi">1</span><span class="ow">..</span><span class="mi">5</span><span class="ow">]</span>
+</pre></div>
+
+<p>Just a small change. Instead of writing down the whole List we are using a range. Now let’s take a look at the output.</p>
+<pre><code>raichoo@lain tmp» ls -lh test2.js
+-rw-r--r-- 1 raichoo users 99K Feb 13 17:45 test2.js</code></pre>
+<p>Yikes, 99K! How did that happen?</p>
+<p>Ranges are not built in, they are just a syntax extension that has been defined in the standard library and it uses a couple of functions to do what it does. We are now pulling in even more of the standard library.</p>
+<p>Anyway, a simple change and the code grows by a factor of almost 3. Granted, there is an upper bound to the amount of code we can pull in from the library, but that’s not very comforting.</p>
+<p>Is there something we can do about this?</p>
+<p>Yes. The <a href="https://developers.google.com/closure/">Google Closure</a> compiler can do a whole lot of optimizations on JavaScript. Apart from the usual minifying it also can do inlining and dead code elimination.</p>
+<p>Running Closure on our JavaScript files yields the following results:</p>
+<pre><code>raichoo@lain tmp» closure test1.js &gt; test1-cl.js
+raichoo@lain tmp» closure test2.js &gt; test2-cl.js
+raichoo@lain tmp» ls -lh test?-cl.js
+-rw-r--r-- 1 raichoo users 20K Feb 13 18:12 test1-cl.js
+-rw-r--r-- 1 raichoo users 63K Feb 13 18:13 test2-cl.js</code></pre>
+<p>That’s smaller, but we can do even better. Idris targets Closure’s advanced optimizations which can be enabled with the –compilation_level=ADVANCED_OPTIMIZATIONS flag (e.g. closure –compilation_level=ADVANCED_OPTIMIZATIONS). We don’t need to take care of the <a href="http://google-styleguide.googlecode.com/svn/trunk/javascriptguide.xml">Closure Guidelines</a> ourselves, Idris does that for us.</p>
+<p>Here’s the result:</p>
+<pre><code>raichoo@lain tmp» ls -lh test?-cla.js
+-rw-r--r-- 1 raichoo users 7.9K Feb 13 18:18 test1-cla.js
+-rw-r--r-- 1 raichoo users  34K Feb 13 18:18 test2-cla.js</code></pre>
+<p>Now that’s A LOT better. While Closure cannot get rid of the additional library code, it can eliminate code from Idris’ runtime (we don’t need big integers in this example, therefore Closure just get’s rid of the code). Names get compressed and inlining takes place, etc etc.</p>
+<p>I hope this shows that’s Idris can create reasonably sized JavaScript files with a little help from it’s friends.</p>
+<p>Have fun with that!</p>
+
+        </div>
+        <div id="footer">
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </div>
+    </body>
+</html>

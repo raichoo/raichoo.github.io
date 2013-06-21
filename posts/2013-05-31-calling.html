@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>raichoo : λΠ-punk - Calling Idris from Javascript and vice-versa</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">raichoo : λΠ-punk</a>
+            </div>
+            <div id="navigation">
+              <a href="http://twitter.com/raichoo">Twitter</a>
+              <a href="http://github.com/raichoo">Github</a>
+              <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Calling Idris from Javascript and vice-versa</h1>
+
+            <div class="info">
+    Posted on May 31, 2013
+    
+        by raichoo
+    
+</div>
+
+<p>Until now the JavaScript backend for Idris has been a nice little gimmick to play around with, but when it comes to writing real applications it’s pretty limited. The limitations originates from the way how the FFI interacts with JavaScript. Until now it was not possible to call Idris code from within JavaScript which is essential when you want to register callbacks. In this blogpost I present my current work on the Idris FFI and JavaScript backend which enables this functionality.</p>
+<p>Let’s write a very simple piece of code that just changes a text label when it gets clicked.</p>
+<p>To do this we will need to define our onclick function. It’ll look like this:</p>
+<div class="highlight"><pre><span class="nf">setOnClick</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="err">(()</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">())</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>
+setOnClick <span class="err">(</span><span class="kt">Elem</span> p<span class="err">)</span> f <span class="ow">=</span>
+  mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.onclick=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FFunction</span> <span class="kt">FUnit</span> <span class="err">(</span><span class="kt">FAny</span> <span class="err">(</span><span class="kt">IO</span> <span class="err">()))</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> p f
+</pre></div>
+
+<p>Let’s break down what happens here. We are defining a function that takes an HTMLElement and a function that performs a side effect that should get executed whenever we click on the element. I’m using the FPtr type to represent a element. The name of the function tells the FFI that “onclick” is a field of an element. Whenever a name starts with a dot the FFI concludes that the first argument has to be an object and the name of the function is one of its fields. When the name ends with an equals sign it concludes that we are dealing with an assignment. In <a href="posts/2013-01-21-playing.html">my previous blogposts</a> I’m explaning how these mechanisms are used.</p>
+<p>The second argument of our onclick function is of type “FFunction” takes an FUnit and returns a FAny (IO ()). mkForeign translates this into a function of type () -&gt; IO (). For more information about the Idris FFI take a look at the <a href="http://www.cs.st-andrews.ac.uk/~eb/writings/idris-tutorial.pdf">tutorial</a>.</p>
+<p>Lets take a look at the FFI in action:</p>
+<div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
+ 
+<span class="kr">data</span> <span class="kt">HTMLElement</span> <span class="ow">:</span> <span class="kt">Type</span> <span class="kr">where</span>
+  <span class="nf">Elem</span> <span class="ow">:</span> <span class="kt">Ptr</span> <span class="ow">-&gt;</span> <span class="kt">HTMLElement</span>
+ 
+<span class="kr">data</span> <span class="kt">NodeList</span> <span class="ow">:</span> <span class="kt">Type</span> <span class="kr">where</span>
+  <span class="nf">Nodes</span> <span class="ow">:</span> <span class="kt">Ptr</span> <span class="ow">-&gt;</span> <span class="kt">NodeList</span>
+ 
+<span class="nf">query</span> <span class="ow">:</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">NodeList</span>
+query q <span class="ow">=</span> <span class="kr">do</span>
+  e <span class="ow">&lt;-</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;document.querySelectorAll&quot;</span> <span class="ow">[</span><span class="kt">FString</span><span class="ow">]</span> <span class="kt">FPtr</span><span class="err">)</span> q
+  return <span class="err">(</span><span class="kt">Nodes</span> e<span class="err">)</span>
+ 
+<span class="nf">item</span> <span class="ow">:</span> <span class="kt">NodeList</span> <span class="ow">-&gt;</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">HTMLElement</span>
+item <span class="err">(</span><span class="kt">Nodes</span> p<span class="err">)</span> i <span class="ow">=</span> <span class="kr">do</span>
+  i <span class="ow">&lt;-</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.item&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span><span class="ow">]</span> <span class="kt">FPtr</span><span class="err">)</span> p i
+  return <span class="err">(</span><span class="kt">Elem</span> i<span class="err">)</span>
+ 
+<span class="nf">setOnClick</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="err">(()</span> <span class="ow">-&gt;</span> <span class="kt">IO</span><span class="err">())</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>  
+setOnClick <span class="err">(</span><span class="kt">Elem</span> p<span class="err">)</span> f <span class="ow">=</span>
+  mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;['onclick']=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FFunction</span> <span class="kt">FUnit</span> <span class="err">(</span><span class="kt">FAny</span> <span class="err">(</span><span class="kt">IO</span> <span class="err">()))</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> p f
+ 
+<span class="nf">setText</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>
+setText <span class="err">(</span><span class="kt">Elem</span> p<span class="err">)</span> s <span class="ow">=</span>
+  mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.textContent=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FString</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> p s
+ 
+<span class="nf">test</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="err">()</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>
+test e i <span class="ow">=</span> <span class="kr">do</span>
+  setText e <span class="s">&quot;SUPERFOO&quot;</span>
+  putStrLn <span class="s">&quot;testfoo&quot;</span>
+ 
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> <span class="kr">do</span>
+  e <span class="ow">&lt;-</span> query <span class="s">&quot;#test&quot;</span>
+  i <span class="ow">&lt;-</span> item e <span class="mi">0</span>
+  setOnClick i <span class="err">(</span>test i<span class="err">)</span>
+</pre></div>
+
+<p>Have fun with calling functions back and forth :3</p>
+
+        </div>
+        <div id="footer">
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </div>
+    </body>
+</html>
