@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>raichoo : λΠ-punk</title>
+        <link>http://raichoo.github.io</link>
+        <description><![CDATA[Types, Insanity, Blog, Programming]]></description>
+        <atom:link href="http://raichoo.github.io/feed.rss" rel="self"
+                   type="application/rss+xml" />
+        <lastBuildDate>Fri, 31 May 2013 00:00:00 UT</lastBuildDate>
+        <item>
+    <title>Calling Idris from Javascript and vice-versa</title>
+    <link>http://raichoo.github.io/posts/2013-05-31-calling.html</link>
+    <description><![CDATA[<h1>Calling Idris from Javascript and vice-versa</h1>
+<div class="info">
+    Posted on May 31, 2013
+    
+        by raichoo
+    
+</div>
+
+<p>Until now the JavaScript backend for Idris has been a nice little gimmick to play around with, but when it comes to writing real applications it’s pretty limited. The limitations originates from the way how the FFI interacts with JavaScript. Until now it was not possible to call Idris code from within JavaScript which is essential when you want to register callbacks. In this blogpost I present my current work on the Idris FFI and JavaScript backend which enables this functionality.</p>
+<p>Let’s write a very simple piece of code that just changes a text label when it gets clicked.</p>
+<p>To do this we will need to define our onclick function. It’ll look like this:</p>
+<div class="highlight"><pre><span class="nf">setOnClick</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="err">(()</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">())</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>
+setOnClick <span class="err">(</span><span class="kt">Elem</span> p<span class="err">)</span> f <span class="ow">=</span>
+  mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.onclick=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FFunction</span> <span class="kt">FUnit</span> <span class="err">(</span><span class="kt">FAny</span> <span class="err">(</span><span class="kt">IO</span> <span class="err">()))</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> p f
+</pre></div>
+
+<p>Let’s break down what happens here. We are defining a function that takes an HTMLElement and a function that performs a side effect that should get executed whenever we click on the element. I’m using the FPtr type to represent a element. The name of the function tells the FFI that “onclick” is a field of an element. Whenever a name starts with a dot the FFI concludes that the first argument has to be an object and the name of the function is one of its fields. When the name ends with an equals sign it concludes that we are dealing with an assignment. In <a href="posts/2013-01-21-playing.html">my previous blogposts</a> I’m explaning how these mechanisms are used.</p>
+<p>The second argument of our onclick function is of type “FFunction” takes an FUnit and returns a FAny (IO ()). mkForeign translates this into a function of type () -&gt; IO (). For more information about the Idris FFI take a look at the <a href="http://www.cs.st-andrews.ac.uk/~eb/writings/idris-tutorial.pdf">tutorial</a>.</p>
+<p>Lets take a look at the FFI in action:</p>
+<div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
+ 
+<span class="kr">data</span> <span class="kt">HTMLElement</span> <span class="ow">:</span> <span class="kt">Type</span> <span class="kr">where</span>
+  <span class="nf">Elem</span> <span class="ow">:</span> <span class="kt">Ptr</span> <span class="ow">-&gt;</span> <span class="kt">HTMLElement</span>
+ 
+<span class="kr">data</span> <span class="kt">NodeList</span> <span class="ow">:</span> <span class="kt">Type</span> <span class="kr">where</span>
+  <span class="nf">Nodes</span> <span class="ow">:</span> <span class="kt">Ptr</span> <span class="ow">-&gt;</span> <span class="kt">NodeList</span>
+ 
+<span class="nf">query</span> <span class="ow">:</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">NodeList</span>
+query q <span class="ow">=</span> <span class="kr">do</span>
+  e <span class="ow">&lt;-</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;document.querySelectorAll&quot;</span> <span class="ow">[</span><span class="kt">FString</span><span class="ow">]</span> <span class="kt">FPtr</span><span class="err">)</span> q
+  return <span class="err">(</span><span class="kt">Nodes</span> e<span class="err">)</span>
+ 
+<span class="nf">item</span> <span class="ow">:</span> <span class="kt">NodeList</span> <span class="ow">-&gt;</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">HTMLElement</span>
+item <span class="err">(</span><span class="kt">Nodes</span> p<span class="err">)</span> i <span class="ow">=</span> <span class="kr">do</span>
+  i <span class="ow">&lt;-</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.item&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span><span class="ow">]</span> <span class="kt">FPtr</span><span class="err">)</span> p i
+  return <span class="err">(</span><span class="kt">Elem</span> i<span class="err">)</span>
+ 
+<span class="nf">setOnClick</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="err">(()</span> <span class="ow">-&gt;</span> <span class="kt">IO</span><span class="err">())</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>  
+setOnClick <span class="err">(</span><span class="kt">Elem</span> p<span class="err">)</span> f <span class="ow">=</span>
+  mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;[&#39;onclick&#39;]=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FFunction</span> <span class="kt">FUnit</span> <span class="err">(</span><span class="kt">FAny</span> <span class="err">(</span><span class="kt">IO</span> <span class="err">()))</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> p f
+ 
+<span class="nf">setText</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>
+setText <span class="err">(</span><span class="kt">Elem</span> p<span class="err">)</span> s <span class="ow">=</span>
+  mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.textContent=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FString</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> p s
+ 
+<span class="nf">test</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="err">()</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>
+test e i <span class="ow">=</span> <span class="kr">do</span>
+  setText e <span class="s">&quot;SUPERFOO&quot;</span>
+  putStrLn <span class="s">&quot;testfoo&quot;</span>
+ 
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> <span class="kr">do</span>
+  e <span class="ow">&lt;-</span> query <span class="s">&quot;#test&quot;</span>
+  i <span class="ow">&lt;-</span> item e <span class="mi">0</span>
+  setOnClick i <span class="err">(</span>test i<span class="err">)</span>
+</pre></div>
+
+<p>Have fun with calling functions back and forth :3</p>
+]]></description>
+    <pubDate>Fri, 31 May 2013 00:00:00 UT</pubDate>
+    <guid>http://raichoo.github.io/posts/2013-05-31-calling.html</guid>
+</item>
+<item>
+    <title>Shrinking Idris JavaScript with Closure</title>
+    <link>http://raichoo.github.io/posts/2013-02-13-shrinking.html</link>
+    <description><![CDATA[<h1>Shrinking Idris JavaScript with Closure</h1>
+<div class="info">
+    Posted on February 13, 2013
+    
+        by raichoo
+    
+</div>
+
+<p>Compiling Idris to JavaScript can result in some pretty large files. In fact, small Idris programs can become so large that one might consider to fall back to JavaScript because it’s just not worth it.</p>
+<p>Let’s take a look at a very simple example:</p>
+<div class="highlight"><pre><span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> <span class="kr">do</span>
+  print l
+<span class="kr">where</span>
+  <span class="nf">l</span> <span class="ow">:</span> <span class="kt">List</span> <span class="kt">Nat</span>
+  l <span class="ow">=</span> <span class="ow">[</span><span class="mi">1</span>,<span class="mi">2</span>,<span class="mi">3</span>,<span class="mi">4</span>,<span class="mi">5</span><span class="ow">]</span>
+</pre></div>
+
+<p>Let’s compile this program and take a look at the size of the generated JavaScript.</p>
+<pre><code>raichoo@lain tmp» ls -lh test1.js
+-rw-r--r-- 1 raichoo users 35K Feb 13 17:40 test1.js</code></pre>
+<p>35K of code is actually quite a lot for such a small program, but let’s take into account that the file contains the whole runtime plus all needed parts of the standard library.</p>
+<p>However, it gets even worse. The above program can be written in a different way. Let’s give it a try.</p>
+<div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
+
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> <span class="kr">do</span>
+  print l
+<span class="kr">where</span>
+  <span class="nf">l</span> <span class="ow">:</span> <span class="kt">List</span> <span class="kt">Nat</span>
+  l <span class="ow">=</span> <span class="ow">[</span><span class="mi">1</span><span class="ow">..</span><span class="mi">5</span><span class="ow">]</span>
+</pre></div>
+
+<p>Just a small change. Instead of writing down the whole List we are using a range. Now let’s take a look at the output.</p>
+<pre><code>raichoo@lain tmp» ls -lh test2.js
+-rw-r--r-- 1 raichoo users 99K Feb 13 17:45 test2.js</code></pre>
+<p>Yikes, 99K! How did that happen?</p>
+<p>Ranges are not built in, they are just a syntax extension that has been defined in the standard library and it uses a couple of functions to do what it does. We are now pulling in even more of the standard library.</p>
+<p>Anyway, a simple change and the code grows by a factor of almost 3. Granted, there is an upper bound to the amount of code we can pull in from the library, but that’s not very comforting.</p>
+<p>Is there something we can do about this?</p>
+<p>Yes. The <a href="https://developers.google.com/closure/">Google Closure</a> compiler can do a whole lot of optimizations on JavaScript. Apart from the usual minifying it also can do inlining and dead code elimination.</p>
+<p>Running Closure on our JavaScript files yields the following results:</p>
+<pre><code>raichoo@lain tmp» closure test1.js &gt; test1-cl.js
+raichoo@lain tmp» closure test2.js &gt; test2-cl.js
+raichoo@lain tmp» ls -lh test?-cl.js
+-rw-r--r-- 1 raichoo users 20K Feb 13 18:12 test1-cl.js
+-rw-r--r-- 1 raichoo users 63K Feb 13 18:13 test2-cl.js</code></pre>
+<p>That’s smaller, but we can do even better. Idris targets Closure’s advanced optimizations which can be enabled with the –compilation_level=ADVANCED_OPTIMIZATIONS flag (e.g. closure –compilation_level=ADVANCED_OPTIMIZATIONS). We don’t need to take care of the <a href="http://google-styleguide.googlecode.com/svn/trunk/javascriptguide.xml">Closure Guidelines</a> ourselves, Idris does that for us.</p>
+<p>Here’s the result:</p>
+<pre><code>raichoo@lain tmp» ls -lh test?-cla.js
+-rw-r--r-- 1 raichoo users 7.9K Feb 13 18:18 test1-cla.js
+-rw-r--r-- 1 raichoo users  34K Feb 13 18:18 test2-cla.js</code></pre>
+<p>Now that’s A LOT better. While Closure cannot get rid of the additional library code, it can eliminate code from Idris’ runtime (we don’t need big integers in this example, therefore Closure just get’s rid of the code). Names get compressed and inlining takes place, etc etc.</p>
+<p>I hope this shows that’s Idris can create reasonably sized JavaScript files with a little help from it’s friends.</p>
+<p>Have fun with that!</p>
+]]></description>
+    <pubDate>Wed, 13 Feb 2013 00:00:00 UT</pubDate>
+    <guid>http://raichoo.github.io/posts/2013-02-13-shrinking.html</guid>
+</item>
+<item>
+    <title>Idris to JavaScript: Playing with the FFI</title>
+    <link>http://raichoo.github.io/posts/2013-01-21-playing.html</link>
+    <description><![CDATA[<h1>Idris to JavaScript: Playing with the FFI</h1>
+<div class="info">
+    Posted on January 21, 2013
+    
+        by raichoo
+    
+</div>
+
+<p>Until now the FFI for the JavaScript backend for Idris is quite primitive and somehow I’d like to keep it that way since I don’t want to make invasive changes to the language just because of a different target. Therefore a started a little experiment to see how far one can get with the current FFI. In JavaScript can have fields of objects, methods, functions, arrays etc etc. and we need to cover all these cases. Let’s start with a little case study. We want to manipulate the DOM. Here is a little HTML snippet to begin with:</p>
+<div class="highlight"><pre><span class="nt">&lt;html&gt;</span>
+  <span class="nt">&lt;head&gt;</span>
+  <span class="nt">&lt;/head&gt;</span>
+  <span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;test&quot;</span><span class="nt">&gt;</span>Foobar<span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;test.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+  <span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</pre></div>
+
+<p>Now we want to replace the text of the Node with the id test</p>
+<div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
+
+<span class="kr">data</span> <span class="kt">HTMLElement</span> <span class="ow">:</span> <span class="kt">Type</span> <span class="kr">where</span>
+  <span class="nf">Elem</span> <span class="ow">:</span> <span class="kt">Ptr</span> <span class="ow">-&gt;</span> <span class="kt">HTMLElement</span>
+
+<span class="kr">data</span> <span class="kt">NodeList</span> <span class="ow">:</span> <span class="kt">Type</span> <span class="kr">where</span>
+  <span class="nf">Nodes</span> <span class="ow">:</span> <span class="kt">Ptr</span> <span class="ow">-&gt;</span> <span class="kt">NodeList</span>
+
+<span class="nf">query</span> <span class="ow">:</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">NodeList</span>
+query q <span class="ow">=</span> <span class="kr">do</span>
+  e <span class="ow">&lt;-</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;document.querySelectorAll&quot;</span> <span class="ow">[</span><span class="kt">FString</span><span class="ow">]</span> <span class="kt">FPtr</span><span class="err">)</span> q
+  return <span class="err">(</span><span class="kt">Nodes</span> e<span class="err">)</span>
+
+<span class="nf">item</span> <span class="ow">:</span> <span class="kt">NodeList</span> <span class="ow">-&gt;</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">HTMLElement</span>
+item <span class="err">(</span><span class="kt">Nodes</span> p<span class="err">)</span> i <span class="ow">=</span> <span class="kr">do</span>
+  i <span class="ow">&lt;-</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.item&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span><span class="ow">]</span> <span class="kt">FPtr</span><span class="err">)</span> p i
+  return <span class="err">(</span><span class="kt">Elem</span> i<span class="err">)</span>
+
+<span class="nf">getId</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">String</span>
+getId <span class="err">(</span><span class="kt">Elem</span> p<span class="err">)</span> <span class="ow">=</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span> p
+
+<span class="nf">setText</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>
+setText <span class="err">(</span><span class="kt">Elem</span> p<span class="err">)</span> s <span class="ow">=</span>
+  mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.textContent=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FString</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> p s
+
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> <span class="kr">do</span>
+  e <span class="ow">&lt;-</span> query <span class="s">&quot;#test&quot;</span>
+  i <span class="ow">&lt;-</span> item e <span class="mi">0</span>
+  s <span class="ow">&lt;-</span> getId i
+  setText i <span class="err">(</span>s <span class="ow">++</span> <span class="s">&quot;: SUPERFOO!!!&quot;</span><span class="err">)</span>
+</pre></div>
+
+<p>In this example I’m using the Ptr type for raw JavaScript values and wrap them in ADTs. The interesting part is in the definition of the foreign functions. Functions starting with “.” are methods or fields, that means that the first argument of the function is handled as and object and the function call gets translated into a method or field name. Functions ending with “=” are turned into assignments</p>
+<p>Another thing we have to consider is that sometimes we want to refer to a method with no arguments, therefore we have to distinguish them from reading a field. In our example we read the value of the field id. If we wanted to turn that into a method call we need to declare it like this:</p>
+<div class="highlight"><pre>mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FUnit</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span> p <span class="err">()</span>
+</pre></div>
+
+<p>We simply add an argument of type FUnit to the argument list and apply (). Operations on arrays are declared like this:</p>
+<div class="highlight"><pre>mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id[]&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span>
+mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id[]=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span>, <span class="kt">FString</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span>
+</pre></div>
+
+<p>The second argument is treated as an index Working with the FFI is still dangerous, I’m currently unaware of a different way to do this without changing Idris’ FFI which is something I don’t want to. Another thing I don’t want to do is making the FFI overly complex, it should be very low level and provide the basic building blocks for interacting with JavaScript. Anyway, patches are welcome ^^</p>
+]]></description>
+    <pubDate>Mon, 21 Jan 2013 00:00:00 UT</pubDate>
+    <guid>http://raichoo.github.io/posts/2013-01-21-playing.html</guid>
+</item>
+<item>
+    <title>Towards dependently typed webprogramming with Idris</title>
+    <link>http://raichoo.github.io/posts/2013-01-18-toward.html</link>
+    <description><![CDATA[<h1>Towards dependently typed webprogramming with Idris</h1>
+<div class="info">
+    Posted on January 18, 2013
+    
+        by raichoo
+    
+</div>
+
+<p>JavaScript pretty much has become the lingua franka of the web. It runs in the browser, and since <a href="http://nodejs.org/">nodejs</a> it’s also possible to write server applications. However, it lacks a powerful type-system, and type-systems are something a lot of us have come to love. Anyway, this is not the time for the usual “dynamic vs. static” and “weak vs. strong typing” blog post. Today I want to write about a project I’ve started working on which brings <a href="http://en.wikipedia.org/wiki/Dependent_type">dependent types</a> to the JavaScript ecosystem meaning a JavaScript backend for the <a href="http://idris-lang.org/">Idris</a> compiler. The foundation of this effort, the programming language Idris by Edwin Brady. Idris is basically the answer to the question: “What would Haskell look like if it had full dependent types?” It has strict semantics but also offers annotations for non-strict evaluation. If you want to know more about Idris can highly recommend <a href="http://www.cs.st-andrews.ac.uk/~eb/writings/idris-tutorial.pdf">the tutorial</a>. Sadly there is not a lot of material out there to learn about programming with dependent types but I will link some resources in this blog post. The backend itself compiles a large set of the language into a self contained Javascript file and offers a simple FFI to communicate with other libraries. It’s still every experimental and I would not recommend to use it in your dayjob. However, if you feel like it feel free to contribute libraries and patches to complete the experience and transform Idris into a suitable language for web programming :)</p>
+<p>How to use it: Let’s write a little Idris program and compile it to JavaScript:</p>
+<div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
+
+<span class="nf">product</span> <span class="ow">:</span> <span class="kt">List</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
+product <span class="ow">=</span> foldl <span class="err">(</span><span class="ow">*</span><span class="err">)</span> <span class="mi">1</span>
+
+<span class="nf">fac</span> <span class="ow">:</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
+fac n <span class="ow">=</span> product <span class="ow">[</span><span class="mi">1</span><span class="ow">..</span>n<span class="ow">]</span>
+
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> print <span class="err">(</span>fac <span class="mi">300</span><span class="err">)</span>
+</pre></div>
+
+<p>and compile it</p>
+<pre><code>&gt; idris --target javascript test.idr -o test.js</code></pre>
+<p>and run it</p>
+<pre><code>&gt; node test.js
+… long output is long …</code></pre>
+<p>As you can see, the backend also supports big integers. The generated file is completely self contained including code from the standard library like typeclasses etc. (not everything but the code you need). Now lets use the FFI to call into JavaScript land!</p>
+<div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
+
+<span class="nf">product</span> <span class="ow">:</span> <span class="kt">List</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
+product <span class="ow">=</span> foldl <span class="err">(</span><span class="ow">*</span><span class="err">)</span> <span class="mi">1</span>
+
+<span class="nf">fac</span> <span class="ow">:</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
+fac n <span class="ow">=</span> product <span class="ow">[</span><span class="mi">1</span><span class="ow">..</span>n<span class="ow">]</span>
+
+<span class="nf">alert</span> <span class="ow">:</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>                                     
+alert s <span class="ow">=</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;alert&quot;</span> <span class="ow">[</span><span class="kt">FString</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> s
+
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> alert <span class="ow">$</span> show <span class="err">(</span>fac <span class="mi">300</span><span class="err">)</span>
+</pre></div>
+
+<p>Compile and run it in a browser of your choice ^^</p>
+<p>This is just a little fraction of what you can do with the backend. Currently there is no support for types like Word8 and Word16 because it would not really make sense in a JavaScript context. There is also no support for filesystem operations. The code that gets generated is still rather large but with the google closure compiler you can reduce the size by a factor of 2 (advanced compilation is not supported at the moment).</p>
+<p>References:</p>
+<ul>
+<li><a href="http://adam.chlipala.net/cpdt/">Certified Programming With Dependent Types</a></li>
+<li><a href="http://www.youtube.com/watch?v=CmPw7eo3nQI">Talk by Andreas Bogk at Chaos Communication Camp 2011</a></li>
+<li><a href="http://wiki.portal.chalmers.se/agda/pmwiki.php">Agda Wiki</a></li>
+</ul>
+]]></description>
+    <pubDate>Fri, 18 Jan 2013 00:00:00 UT</pubDate>
+    <guid>http://raichoo.github.io/posts/2013-01-18-toward.html</guid>
+</item>
+
+    </channel> 
+</rss>
