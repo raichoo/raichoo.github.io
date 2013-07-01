@@ -43,11 +43,12 @@ fac n <span class="ow">=</span> product <span class="ow">[</span><span class="mi
 main <span class="ow">=</span> print <span class="err">(</span>fac <span class="mi">300</span><span class="err">)</span>
 </pre></div>
 
+
 <p>and compile it</p>
 <pre><code>&gt; idris --target javascript test.idr -o test.js</code></pre>
 <p>and run it</p>
 <pre><code>&gt; node test.js
-… long output is long …</code></pre>
+... long output is long ...</code></pre>
 <p>As you can see, the backend also supports big integers. The generated file is completely self contained including code from the standard library like typeclasses etc. (not everything but the code you need). Now lets use the FFI to call into JavaScript land!</p>
 <div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
 
@@ -57,12 +58,13 @@ product <span class="ow">=</span> foldl <span class="err">(</span><span class="o
 <span class="nf">fac</span> <span class="ow">:</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
 fac n <span class="ow">=</span> product <span class="ow">[</span><span class="mi">1</span><span class="ow">..</span>n<span class="ow">]</span>
 
-<span class="nf">alert</span> <span class="ow">:</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>                                     
+<span class="nf">alert</span> <span class="ow">:</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>
 alert s <span class="ow">=</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;alert&quot;</span> <span class="ow">[</span><span class="kt">FString</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> s
 
 <span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
 main <span class="ow">=</span> alert <span class="ow">$</span> show <span class="err">(</span>fac <span class="mi">300</span><span class="err">)</span>
 </pre></div>
+
 
 <p>Compile and run it in a browser of your choice ^^</p>
 <p>This is just a little fraction of what you can do with the backend. Currently there is no support for types like Word8 and Word16 because it would not really make sense in a JavaScript context. There is also no support for filesystem operations. The code that gets generated is still rather large but with the google closure compiler you can reduce the size by a factor of 2 (advanced compilation is not supported at the moment).</p>

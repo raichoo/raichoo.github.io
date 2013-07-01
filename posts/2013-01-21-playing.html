@@ -30,16 +30,7 @@
 </div>
 
 <p>Until now the FFI for the JavaScript backend for Idris is quite primitive and somehow I’d like to keep it that way since I don’t want to make invasive changes to the language just because of a different target. Therefore a started a little experiment to see how far one can get with the current FFI. In JavaScript can have fields of objects, methods, functions, arrays etc etc. and we need to cover all these cases. Let’s start with a little case study. We want to manipulate the DOM. Here is a little HTML snippet to begin with:</p>
-<div class="highlight"><pre><span class="nt">&lt;html&gt;</span>
-  <span class="nt">&lt;head&gt;</span>
-  <span class="nt">&lt;/head&gt;</span>
-  <span class="nt">&lt;body&gt;</span>
-    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;test&quot;</span><span class="nt">&gt;</span>Foobar<span class="nt">&lt;/div&gt;</span>
-    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;test.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-  <span class="nt">&lt;/body&gt;</span>
-<span class="nt">&lt;/html&gt;</span>
-</pre></div>
-
+<p>$snippet(“2013-01-21-playing-snippet1.html”)</p>
 <p>Now we want to replace the text of the Node with the id test</p>
 <div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
 
@@ -74,15 +65,18 @@ main <span class="ow">=</span> <span class="kr">do</span>
   setText i <span class="err">(</span>s <span class="ow">++</span> <span class="s">&quot;: SUPERFOO!!!&quot;</span><span class="err">)</span>
 </pre></div>
 
+
 <p>In this example I’m using the Ptr type for raw JavaScript values and wrap them in ADTs. The interesting part is in the definition of the foreign functions. Functions starting with “.” are methods or fields, that means that the first argument of the function is handled as and object and the function call gets translated into a method or field name. Functions ending with “=” are turned into assignments</p>
 <p>Another thing we have to consider is that sometimes we want to refer to a method with no arguments, therefore we have to distinguish them from reading a field. In our example we read the value of the field id. If we wanted to turn that into a method call we need to declare it like this:</p>
 <div class="highlight"><pre>mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FUnit</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span> p <span class="err">()</span>
 </pre></div>
 
+
 <p>We simply add an argument of type FUnit to the argument list and apply (). Operations on arrays are declared like this:</p>
 <div class="highlight"><pre>mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id[]&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span>
 mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id[]=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span>, <span class="kt">FString</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span>
 </pre></div>
+
 
 <p>The second argument is treated as an index Working with the FFI is still dangerous, I’m currently unaware of a different way to do this without changing Idris’ FFI which is something I don’t want to. Another thing I don’t want to do is making the FFI overly complex, it should be very low level and provide the basic building blocks for interacting with JavaScript. Anyway, patches are welcome ^^</p>
 

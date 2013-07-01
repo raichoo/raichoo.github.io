@@ -36,11 +36,12 @@ main <span class="ow">=</span> <span class="kr">do</span>
   print l
 <span class="kr">where</span>
   <span class="nf">l</span> <span class="ow">:</span> <span class="kt">List</span> <span class="kt">Nat</span>
-  l <span class="ow">=</span> <span class="ow">[</span><span class="mi">1</span>,<span class="mi">2</span>,<span class="mi">3</span>,<span class="mi">4</span>,<span class="mi">5</span><span class="ow">]</span>
+  l <span class="ow">=</span> <span class="ow">[</span><span class="mi">1</span>, <span class="mi">2</span>, <span class="mi">3</span>, <span class="mi">4</span>, <span class="mi">5</span><span class="ow">]</span>
 </pre></div>
 
+
 <p>Let’s compile this program and take a look at the size of the generated JavaScript.</p>
-<pre><code>raichoo@lain tmp» ls -lh test1.js
+<pre><code>&gt; ls -lh test1.js
 -rw-r--r-- 1 raichoo users 35K Feb 13 17:40 test1.js</code></pre>
 <p>35K of code is actually quite a lot for such a small program, but let’s take into account that the file contains the whole runtime plus all needed parts of the standard library.</p>
 <p>However, it gets even worse. The above program can be written in a different way. Let’s give it a try.</p>
@@ -54,8 +55,9 @@ main <span class="ow">=</span> <span class="kr">do</span>
   l <span class="ow">=</span> <span class="ow">[</span><span class="mi">1</span><span class="ow">..</span><span class="mi">5</span><span class="ow">]</span>
 </pre></div>
 
+
 <p>Just a small change. Instead of writing down the whole List we are using a range. Now let’s take a look at the output.</p>
-<pre><code>raichoo@lain tmp» ls -lh test2.js
+<pre><code>&gt; ls -lh test2.js
 -rw-r--r-- 1 raichoo users 99K Feb 13 17:45 test2.js</code></pre>
 <p>Yikes, 99K! How did that happen?</p>
 <p>Ranges are not built in, they are just a syntax extension that has been defined in the standard library and it uses a couple of functions to do what it does. We are now pulling in even more of the standard library.</p>
@@ -63,14 +65,14 @@ main <span class="ow">=</span> <span class="kr">do</span>
 <p>Is there something we can do about this?</p>
 <p>Yes. The <a href="https://developers.google.com/closure/">Google Closure</a> compiler can do a whole lot of optimizations on JavaScript. Apart from the usual minifying it also can do inlining and dead code elimination.</p>
 <p>Running Closure on our JavaScript files yields the following results:</p>
-<pre><code>raichoo@lain tmp» closure test1.js &gt; test1-cl.js
-raichoo@lain tmp» closure test2.js &gt; test2-cl.js
-raichoo@lain tmp» ls -lh test?-cl.js
+<pre><code>&gt; closure test1.js &gt; test1-cl.js
+&gt; closure test2.js &gt; test2-cl.js
+&gt; ls -lh test?-cl.js
 -rw-r--r-- 1 raichoo users 20K Feb 13 18:12 test1-cl.js
 -rw-r--r-- 1 raichoo users 63K Feb 13 18:13 test2-cl.js</code></pre>
 <p>That’s smaller, but we can do even better. Idris targets Closure’s advanced optimizations which can be enabled with the –compilation_level=ADVANCED_OPTIMIZATIONS flag (e.g. closure –compilation_level=ADVANCED_OPTIMIZATIONS). We don’t need to take care of the <a href="http://google-styleguide.googlecode.com/svn/trunk/javascriptguide.xml">Closure Guidelines</a> ourselves, Idris does that for us.</p>
 <p>Here’s the result:</p>
-<pre><code>raichoo@lain tmp» ls -lh test?-cla.js
+<pre><code>&gt; ls -lh test?-cla.js
 -rw-r--r-- 1 raichoo users 7.9K Feb 13 18:18 test1-cla.js
 -rw-r--r-- 1 raichoo users  34K Feb 13 18:18 test2-cla.js</code></pre>
 <p>Now that’s A LOT better. While Closure cannot get rid of the additional library code, it can eliminate code from Idris’ runtime (we don’t need big integers in this example, therefore Closure just get’s rid of the code). Names get compressed and inlining takes place, etc etc.</p>
