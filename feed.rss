@@ -6,8 +6,135 @@
         <description><![CDATA[Types, Insanity, Blog, Programming]]></description>
         <atom:link href="http://raichoo.github.io/feed.rss" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Fri, 31 May 2013 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Tue, 28 Jan 2014 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Idris to JavaScript: New and improved!</title>
+    <link>http://raichoo.github.io/posts/2014-01-28-improved.html</link>
+    <description><![CDATA[<h1>Idris to JavaScript: New and improved!</h1>
+<div class="info">
+    Posted on January 28, 2014
+    
+        by raichoo
+    
+</div>
+
+<p>It’s been a long time since I’ve blogged about progress on the JavaScript side of Idris, too long actually. A lot of people picked up my blog examples only to find out that they didn’t work anymore. Tons of things have changed and I was way to busy to talk about them at length, sorry ’bout that.</p>
+<p>Today I want to talk a little bit about what happens to your Idris code when you compile it to JavaScript. When this new code generator was introduced into Idris a lot of folks were very excited about the possiblity to run Idris programs in the browser or on Node. Once they looked at the generated code a lot of them turned away in horror (which is perfectly understandable and I’ll demonstrate why in a minute). But a lot has changed since then and I’d like to show you how.</p>
+<p>The example code I’ll using is inspired from the <a href="http://functorial.com/purescript/">purescript</a> example which shows of <a href="http://tryps.functorial.com/example/tco">purescript’s TCO</a>. It’s not very spectacular but it’ll do.</p>
+<div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
+
+<span class="nf">recTest</span> <span class="ow">:</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
+recTest <span class="ow">=</span> recTestHelper <span class="mi">1</span>
+  <span class="kr">where</span>
+    <span class="nf">recTestHelper</span> <span class="ow">:</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
+    recTestHelper n <span class="mi">0</span> <span class="ow">=</span> n
+    recTestHelper n m <span class="ow">=</span> recTestHelper <span class="err">(</span>n <span class="ow">*</span> m<span class="err">)</span> <span class="err">(</span>m <span class="ow">-</span> <span class="mi">1</span><span class="err">)</span>
+
+
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+main <span class="ow">=</span> print <span class="ow">$</span> recTest <span class="mi">10000</span>
+</pre></div>
+
+
+<p>Let’s look at what the generated code for the <code>recTestHelper</code> function looked like in the past (Brace yourself!).</p>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">__IDR__wnurecTesturecTestHelper0swnurecTesturecTestHelper0</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">me0</span><span class="p">,</span><span class="nx">me1</span><span class="p">){</span>
+  <span class="kd">var</span> <span class="nx">__var_0</span> <span class="o">=</span> <span class="nx">me0</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">__var_1</span> <span class="o">=</span> <span class="nx">me1</span><span class="p">;</span>
+  <span class="k">return</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">__var_2</span><span class="p">){</span>
+    <span class="k">return</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">cse</span><span class="p">){</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">cse</span><span class="p">.</span><span class="nx">equals</span><span class="p">(</span><span class="nx">__IDRRT__ZERO</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">__var_0</span><span class="p">;</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">__var_3</span><span class="p">){</span>
+          <span class="k">return</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">__var_4</span><span class="p">){</span>
+            <span class="k">return</span> <span class="k">new</span> <span class="nx">__IDRRT__Cont</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+              <span class="k">return</span> <span class="nx">__IDR__wnurecTesturecTestHelper0swnurecTesturecTestHelper0</span><span class="p">(</span><span class="nx">__var_3</span><span class="p">,</span><span class="nx">__var_4</span><span class="p">)</span>
+            <span class="p">})</span>
+          <span class="p">})((</span><span class="kd">function</span><span class="p">(</span><span class="nx">__var_4</span><span class="p">){</span>
+            <span class="k">return</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">__var_5</span><span class="p">){</span>
+              <span class="k">return</span> <span class="nx">__var_4</span><span class="p">.</span><span class="nx">subtract</span><span class="p">(</span><span class="nx">__var_5</span><span class="p">)</span>
+            <span class="p">})((</span><span class="kd">function</span><span class="p">(</span><span class="nx">__var_5</span><span class="p">){</span>
+              <span class="k">return</span> <span class="nx">__IDRRT__tailcall</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+                <span class="k">return</span> <span class="nx">__IDR__mEVAL0</span><span class="p">(</span><span class="nx">__var_5</span><span class="p">)</span>
+              <span class="p">})</span>
+            <span class="p">})(</span><span class="nx">__IDRRT__ONE</span><span class="p">))</span>
+          <span class="p">})(</span><span class="nx">__IDRRT__tailcall</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+            <span class="k">return</span> <span class="nx">__IDR__mEVAL0</span><span class="p">(</span><span class="nx">__var_1</span><span class="p">)</span>
+          <span class="p">})))</span>
+        <span class="p">})((</span><span class="kd">function</span><span class="p">(</span><span class="nx">__var_3</span><span class="p">){</span>
+          <span class="k">return</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">__var_4</span><span class="p">){</span>
+            <span class="k">return</span> <span class="nx">__var_3</span><span class="p">.</span><span class="nx">multiply</span><span class="p">(</span><span class="nx">__var_4</span><span class="p">)</span>
+          <span class="p">})(</span><span class="nx">__IDRRT__tailcall</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+            <span class="k">return</span> <span class="nx">__IDR__mEVAL0</span><span class="p">(</span><span class="nx">__var_1</span><span class="p">)</span>
+          <span class="p">}))</span>
+        <span class="p">})(</span><span class="nx">__IDRRT__tailcall</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+          <span class="k">return</span> <span class="nx">__IDR__mEVAL0</span><span class="p">(</span><span class="nx">__var_0</span><span class="p">)</span>
+        <span class="p">})));</span>
+      <span class="p">}</span>
+    <span class="p">})(</span><span class="nx">__var_2</span><span class="p">)</span>
+  <span class="p">})(</span><span class="nx">__IDRRT__tailcall</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="nx">__IDR__mEVAL0</span><span class="p">(</span><span class="nx">__var_1</span><span class="p">)</span>
+  <span class="p">}))</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Ok that does not look like our <code>recTestHelper</code> function at all. One is not even sure what this monster is trying to do and how. Granted, with generated code comes some unreadabilty but this is atrocious. Anyway. This was the first attempt to translate Idris into JavaScript, it was more like a proof-of-concept rather than a production grade compiler.</p>
+<p>However, things have changed, now we have an optimizer in place that is doing a whole lot of work. Lets take a look at what current JavaScript that is generated by Idris looks like.</p>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">__IDR__wnurecTesturecTestHelper0swnurecTesturecTestHelper0</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">me0</span><span class="p">,</span><span class="nx">me1</span><span class="p">){</span>
+  <span class="kd">var</span> <span class="nx">__var_2</span> <span class="o">=</span> <span class="nx">__IDRRT__tailcall</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="nx">__IDR__mEVAL0</span><span class="p">(</span><span class="nx">me1</span><span class="p">)</span>
+  <span class="p">});</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">__var_2</span><span class="p">.</span><span class="nx">equals</span><span class="p">(</span><span class="nx">__IDRRT__ZERO</span><span class="p">))</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">me0</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nx">__IDRRT__Cont</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+      <span class="k">return</span> <span class="nx">__IDR__wnurecTesturecTestHelper0swnurecTesturecTestHelper0</span><span class="p">(</span><span class="nx">__IDRRT__tailcall</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+        <span class="k">return</span> <span class="nx">__IDR__mEVAL0</span><span class="p">(</span><span class="nx">me0</span><span class="p">)</span>
+      <span class="p">}).</span><span class="nx">multiply</span><span class="p">(</span><span class="nx">__IDRRT__tailcall</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+        <span class="k">return</span> <span class="nx">__IDR__mEVAL0</span><span class="p">(</span><span class="nx">me1</span><span class="p">)</span>
+      <span class="p">})),</span><span class="nx">__IDRRT__tailcall</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+        <span class="k">return</span> <span class="nx">__IDR__mEVAL0</span><span class="p">(</span><span class="nx">me1</span><span class="p">)</span>
+      <span class="p">}).</span><span class="nx">subtract</span><span class="p">(</span><span class="nx">__IDRRT__ONE</span><span class="p">))</span>
+    <span class="p">});</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Now this is a whole different ball game. Let’s break down what happens here.</p>
+<p>There are two interesting elements in this code snippet I want to focus on first, <code>__IDRRT__tailcall</code> and <code>__IDRRT__Cont</code>. Let’s look at the code of these two functions.</p>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">__IDRRT__tailcall</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">k</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">ret</span> <span class="o">=</span> <span class="nx">k</span><span class="p">();</span>
+  <span class="k">while</span> <span class="p">(</span><span class="nx">ret</span> <span class="k">instanceof</span> <span class="nx">__IDRRT__Cont</span><span class="p">)</span>
+    <span class="nx">ret</span> <span class="o">=</span> <span class="nx">ret</span><span class="p">.</span><span class="nx">k</span><span class="p">();</span>
+
+  <span class="k">return</span> <span class="nx">ret</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kd">var</span> <span class="nx">__IDRRT__Cont</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">k</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">k</span> <span class="o">=</span> <span class="nx">k</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+
+
+<p>So basically these two functions provide us with a trampoline for tailcalls. Now we can get a better understanding of what’s happening here.</p>
+<ul>
+<li>First we evaluate the second argument of our function</li>
+<li>Then we check if it’s 0 (<code>__IDRRT__ZERO</code> is a BigInteger constant)</li>
+<li>If it’s 0 we return the first argument</li>
+<li>Otherwise we continue with the recursive call with arguments (n * m) and (m - 1)</li>
+</ul>
+<p>This is pretty much what we wrote in the first place.</p>
+<p>There is still room for even more optimizations here since we are evaluating some values more than once, but this is very close to what we wrote in the first place. I’m constantly working on the optimizer for faster and smaller code.</p>
+<p>Some people also wondered why the generated code got so much bigger at some point. A lot of this additional code is the new BigInteger library I’m using now which is jsbn (presummably the fastest lib for BigIntegers in JavaScript that is out there at the moment) and it’s about 50% faster than the one I’ve been using before.</p>
+<p>Another point of complaint was that the FFI examples posted on this blog don’t work anymore. This is true, the FFI also has changed and I encourage you to look at <a href="http://www.cs.st-andrews.ac.uk/~eb/writings/idris-tutorial.pdf">the tutorial</a> since it now features a chapter about JavaScript code generation.</p>
+<p>Hopefully this sheds some light on the changes that have happend to the JavaScript side of Idris. We are now approaching a level that seems more suitable for real development. I hope you find this post helpful :)</p>
+]]></description>
+    <pubDate>Tue, 28 Jan 2014 00:00:00 UT</pubDate>
+    <guid>http://raichoo.github.io/posts/2014-01-28-improved.html</guid>
+</item>
+<item>
     <title>Calling Idris from Javascript and vice-versa</title>
     <link>http://raichoo.github.io/posts/2013-05-31-calling.html</link>
     <description><![CDATA[<h1>Calling Idris from Javascript and vice-versa</h1>
