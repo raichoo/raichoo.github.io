@@ -130,6 +130,24 @@ main <span class="ow">=</span> print <span class="ow">$</span> recTest <span cla
 <p>Some people also wondered why the generated code got so much bigger at some point. A lot of this additional code is the new BigInteger library I’m using now which is jsbn (presummably the fastest lib for BigIntegers in JavaScript that is out there at the moment) and it’s about 50% faster than the one I’ve been using before.</p>
 <p>Another point of complaint was that the FFI examples posted on this blog don’t work anymore. This is true, the FFI also has changed and I encourage you to look at <a href="http://www.cs.st-andrews.ac.uk/~eb/writings/idris-tutorial.pdf">the tutorial</a> since it now features a chapter about JavaScript code generation.</p>
 <p>Hopefully this sheds some light on the changes that have happend to the JavaScript side of Idris. We are now approaching a level that seems more suitable for real development. I hope you find this post helpful :)</p>
+<p><strong>UPDATE 01.31.2014</strong></p>
+<p>After some more optimizer tweaking the code now looks like this (<code>__IDRRT__EVALTC</code> is an optimized version of evaluation in combination with a trampoline):</p>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">__IDR__wnurecTesturecTestHelper0swnurecTesturecTestHelper0</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">me0</span><span class="p">,</span><span class="nx">me1</span><span class="p">){</span>
+  <span class="kd">var</span> <span class="nx">__var_2</span> <span class="o">=</span> <span class="nx">__IDRRT__EVALTC</span><span class="p">(</span><span class="nx">me1</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">__var_2</span><span class="p">.</span><span class="nx">equals</span><span class="p">(</span><span class="nx">__IDRRT__ZERO</span><span class="p">))</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">me0</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nx">__IDRRT__Cont</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+      <span class="k">return</span> <span class="nx">__IDR__wnurecTesturecTestHelper0swnurecTesturecTestHelper0</span><span class="p">(</span>
+        <span class="nx">__IDRRT__EVALTC</span><span class="p">(</span><span class="nx">me0</span><span class="p">).</span><span class="nx">multiply</span><span class="p">(</span><span class="nx">__var_2</span><span class="p">),</span><span class="nx">__var_2</span><span class="p">.</span><span class="nx">subtract</span><span class="p">(</span><span class="nx">__IDRRT__ONE</span><span class="p">)</span>
+      <span class="p">)</span>
+    <span class="p">});</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Looks like a great candidate for TCO :)</p>
 ]]></description>
     <pubDate>Tue, 28 Jan 2014 00:00:00 UT</pubDate>
     <guid>http://raichoo.github.io/posts/2014-01-28-improved.html</guid>
