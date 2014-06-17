@@ -42,39 +42,39 @@
 
 <span class="nf">query</span> <span class="ow">:</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">NodeList</span>
 query q <span class="ow">=</span> <span class="kr">do</span>
-  e <span class="ow">&lt;-</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;document.querySelectorAll&quot;</span> <span class="ow">[</span><span class="kt">FString</span><span class="ow">]</span> <span class="kt">FPtr</span><span class="err">)</span> q
-  return <span class="err">(</span><span class="kt">Nodes</span> e<span class="err">)</span>
+  e <span class="ow">&lt;-</span> mkForeign <span class="ow">(</span><span class="kt">FFun</span> <span class="s">&quot;document.querySelectorAll&quot;</span> <span class="ow">[</span><span class="kt">FString</span><span class="ow">]</span> <span class="kt">FPtr</span><span class="ow">)</span> q
+  return <span class="ow">(</span><span class="kt">Nodes</span> e<span class="ow">)</span>
 
 <span class="nf">item</span> <span class="ow">:</span> <span class="kt">NodeList</span> <span class="ow">-&gt;</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">HTMLElement</span>
-item <span class="err">(</span><span class="kt">Nodes</span> p<span class="err">)</span> i <span class="ow">=</span> <span class="kr">do</span>
-  i <span class="ow">&lt;-</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.item&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span><span class="ow">]</span> <span class="kt">FPtr</span><span class="err">)</span> p i
-  return <span class="err">(</span><span class="kt">Elem</span> i<span class="err">)</span>
+item <span class="ow">(</span><span class="kt">Nodes</span> p<span class="ow">)</span> i <span class="ow">=</span> <span class="kr">do</span>
+  i <span class="ow">&lt;-</span> mkForeign <span class="ow">(</span><span class="kt">FFun</span> <span class="s">&quot;.item&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span><span class="ow">]</span> <span class="kt">FPtr</span><span class="ow">)</span> p i
+  return <span class="ow">(</span><span class="kt">Elem</span> i<span class="ow">)</span>
 
 <span class="nf">getId</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="kt">String</span>
-getId <span class="err">(</span><span class="kt">Elem</span> p<span class="err">)</span> <span class="ow">=</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span> p
+getId <span class="ow">(</span><span class="kt">Elem</span> p<span class="ow">)</span> <span class="ow">=</span> mkForeign <span class="ow">(</span><span class="kt">FFun</span> <span class="s">&quot;.id&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span><span class="ow">]</span> <span class="kt">FString</span><span class="ow">)</span> p
 
-<span class="nf">setText</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>
-setText <span class="err">(</span><span class="kt">Elem</span> p<span class="err">)</span> s <span class="ow">=</span>
-  mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.textContent=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FString</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> p s
+<span class="nf">setText</span> <span class="ow">:</span> <span class="kt">HTMLElement</span> <span class="ow">-&gt;</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="ow">()</span>
+setText <span class="ow">(</span><span class="kt">Elem</span> p<span class="ow">)</span> s <span class="ow">=</span>
+  mkForeign <span class="ow">(</span><span class="kt">FFun</span> <span class="s">&quot;.textContent=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FString</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="ow">)</span> p s
 
-<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="ow">()</span>
 main <span class="ow">=</span> <span class="kr">do</span>
   e <span class="ow">&lt;-</span> query <span class="s">&quot;#test&quot;</span>
   i <span class="ow">&lt;-</span> item e <span class="mi">0</span>
   s <span class="ow">&lt;-</span> getId i
-  setText i <span class="err">(</span>s <span class="ow">++</span> <span class="s">&quot;: SUPERFOO!!!&quot;</span><span class="err">)</span>
+  setText i <span class="ow">(</span>s <span class="ow">++</span> <span class="s">&quot;: SUPERFOO!!!&quot;</span><span class="ow">)</span>
 </pre></div>
 
 
 <p>In this example I’m using the Ptr type for raw JavaScript values and wrap them in ADTs. The interesting part is in the definition of the foreign functions. Functions starting with “.” are methods or fields, that means that the first argument of the function is handled as and object and the function call gets translated into a method or field name. Functions ending with “=” are turned into assignments</p>
 <p>Another thing we have to consider is that sometimes we want to refer to a method with no arguments, therefore we have to distinguish them from reading a field. In our example we read the value of the field id. If we wanted to turn that into a method call we need to declare it like this:</p>
-<div class="highlight"><pre>mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FUnit</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span> p <span class="err">()</span>
+<div class="highlight"><pre>mkForeign <span class="ow">(</span><span class="kt">FFun</span> <span class="s">&quot;.id&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FUnit</span><span class="ow">]</span> <span class="kt">FString</span><span class="ow">)</span> p <span class="ow">()</span>
 </pre></div>
 
 
 <p>We simply add an argument of type FUnit to the argument list and apply (). Operations on arrays are declared like this:</p>
-<div class="highlight"><pre>mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id[]&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span>
-mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;.id[]=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span>, <span class="kt">FString</span><span class="ow">]</span> <span class="kt">FString</span><span class="err">)</span>
+<div class="highlight"><pre>mkForeign <span class="ow">(</span><span class="kt">FFun</span> <span class="s">&quot;.id[]&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span><span class="ow">]</span> <span class="kt">FString</span><span class="ow">)</span>
+mkForeign <span class="ow">(</span><span class="kt">FFun</span> <span class="s">&quot;.id[]=&quot;</span> <span class="ow">[</span><span class="kt">FPtr</span>, <span class="kt">FInt</span>, <span class="kt">FString</span><span class="ow">]</span> <span class="kt">FString</span><span class="ow">)</span>
 </pre></div>
 
 

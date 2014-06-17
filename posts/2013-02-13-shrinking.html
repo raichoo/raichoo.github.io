@@ -31,7 +31,7 @@
 
 <p>Compiling Idris to JavaScript can result in some pretty large files. In fact, small Idris programs can become so large that one might consider to fall back to JavaScript because it’s just not worth it.</p>
 <p>Let’s take a look at a very simple example:</p>
-<div class="highlight"><pre><span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+<div class="highlight"><pre><span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="ow">()</span>
 main <span class="ow">=</span> <span class="kr">do</span>
   print l
 <span class="kr">where</span>
@@ -47,7 +47,7 @@ main <span class="ow">=</span> <span class="kr">do</span>
 <p>However, it gets even worse. The above program can be written in a different way. Let’s give it a try.</p>
 <div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
 
-<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="ow">()</span>
 main <span class="ow">=</span> <span class="kr">do</span>
   print l
 <span class="kr">where</span>

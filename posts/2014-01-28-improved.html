@@ -39,10 +39,10 @@ recTest <span class="ow">=</span> recTestHelper <span class="mi">1</span>
   <span class="kr">where</span>
     <span class="nf">recTestHelper</span> <span class="ow">:</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
     recTestHelper n <span class="mi">0</span> <span class="ow">=</span> n
-    recTestHelper n m <span class="ow">=</span> recTestHelper <span class="err">(</span>n <span class="ow">*</span> m<span class="err">)</span> <span class="err">(</span>m <span class="ow">-</span> <span class="mi">1</span><span class="err">)</span>
+    recTestHelper n m <span class="ow">=</span> recTestHelper <span class="ow">(</span>n <span class="ow">*</span> m<span class="ow">)</span> <span class="ow">(</span>m <span class="ow">-</span> <span class="mi">1</span><span class="ow">)</span>
 
 
-<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="ow">()</span>
 main <span class="ow">=</span> print <span class="ow">$</span> recTest <span class="mi">10000</span>
 </pre></div>
 

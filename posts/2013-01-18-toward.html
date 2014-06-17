@@ -34,13 +34,13 @@
 <div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
 
 <span class="nf">product</span> <span class="ow">:</span> <span class="kt">List</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
-product <span class="ow">=</span> foldl <span class="err">(</span><span class="ow">*</span><span class="err">)</span> <span class="mi">1</span>
+product <span class="ow">=</span> foldl <span class="ow">(*)</span> <span class="mi">1</span>
 
 <span class="nf">fac</span> <span class="ow">:</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
 fac n <span class="ow">=</span> product <span class="ow">[</span><span class="mi">1</span><span class="ow">..</span>n<span class="ow">]</span>
 
-<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
-main <span class="ow">=</span> print <span class="err">(</span>fac <span class="mi">300</span><span class="err">)</span>
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="ow">()</span>
+main <span class="ow">=</span> print <span class="ow">(</span>fac <span class="mi">300</span><span class="ow">)</span>
 </pre></div>
 
 
@@ -53,16 +53,16 @@ main <span class="ow">=</span> print <span class="err">(</span>fac <span class="
 <div class="highlight"><pre><span class="kr">module</span> <span class="nn">Main</span>
 
 <span class="nf">product</span> <span class="ow">:</span> <span class="kt">List</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
-product <span class="ow">=</span> foldl <span class="err">(</span><span class="ow">*</span><span class="err">)</span> <span class="mi">1</span>
+product <span class="ow">=</span> foldl <span class="ow">(*)</span> <span class="mi">1</span>
 
 <span class="nf">fac</span> <span class="ow">:</span> <span class="kt">Integer</span> <span class="ow">-&gt;</span> <span class="kt">Integer</span>
 fac n <span class="ow">=</span> product <span class="ow">[</span><span class="mi">1</span><span class="ow">..</span>n<span class="ow">]</span>
 
-<span class="nf">alert</span> <span class="ow">:</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="err">()</span>
-alert s <span class="ow">=</span> mkForeign <span class="err">(</span><span class="kt">FFun</span> <span class="s">&quot;alert&quot;</span> <span class="ow">[</span><span class="kt">FString</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="err">)</span> s
+<span class="nf">alert</span> <span class="ow">:</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="ow">()</span>
+alert s <span class="ow">=</span> mkForeign <span class="ow">(</span><span class="kt">FFun</span> <span class="s">&quot;alert&quot;</span> <span class="ow">[</span><span class="kt">FString</span><span class="ow">]</span> <span class="kt">FUnit</span><span class="ow">)</span> s
 
-<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="err">()</span>
-main <span class="ow">=</span> alert <span class="ow">$</span> show <span class="err">(</span>fac <span class="mi">300</span><span class="err">)</span>
+<span class="nf">main</span> <span class="ow">:</span> <span class="kt">IO</span> <span class="ow">()</span>
+main <span class="ow">=</span> alert <span class="ow">$</span> show <span class="ow">(</span>fac <span class="mi">300</span><span class="ow">)</span>
 </pre></div>
 
 
